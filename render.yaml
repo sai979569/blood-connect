@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: blood-connect-api
+    env: node
+    plan: free
+    branch: main
+    buildCommand: npm run install:all
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        value: https://blood-connect-two-weld.vercel.app
+      - key: PORT
+        value: 5000

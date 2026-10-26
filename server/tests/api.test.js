@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import mongoose from 'mongoose';
-import app from '../src/app.js';
+import app, { isOriginAllowed } from '../src/app.js';
 import connectDB from '../src/config/db.js';
 
 test.before(async () => {
@@ -194,5 +194,85 @@ test('POST /api/v1/auth/register validates required fields and handles duplicate
   assert.equal(dupRes.status, 409);
   assert.equal(dupRes.body.success, false);
   assert.ok(dupRes.body.message.includes('already registered'));
+});
+
+test('CORS rejects unauthorized origins and legacy domain', async () => {
+  // 1. Old domain should NOT receive Access-Control-Allow-Origin header
+  const oldDomainRes = await request(app)
+    .get('/api/v1/health')
+    .set('Origin', 'https://blood-connect-react.vercel.app');
+
+  assert.equal(oldDomainRes.status, 200);
+  assert.equal(oldDomainRes.headers['access-control-allow-origin'], undefined);
+
+  // 2. Arbitrary external domain should NOT receive Access-Control-Allow-Origin header
+  const unauthRes = await request(app)
+    .get('/api/v1/health')
+    .set('Origin', 'https://unauthorized-domain.com');
+
+  assert.equal(unauthRes.status, 200);
+  assert.equal(unauthRes.headers['access-control-allow-origin'], undefined);
+
+  // 3. Unauthorized preflight should NOT receive Access-Control-Allow-Origin header
+  const preflightUnauth = await request(app)
+    .options('/api/v1/auth/register')
+    .set('Origin', 'https://unauthorized-domain.com')
+    .set('Access-Control-Request-Method', 'POST');
+
+  assert.equal(preflightUnauth.headers['access-control-allow-origin'], undefined);
+});
+
+test('GET and POST to unknown routes return structured JSON 404', async () => {
+  // GET unknown route
+  const get404 = await request(app).get('/api/v1/nonexistent-route');
+  assert.equal(get404.status, 404);
+  assert.equal(get404.body.success, false);
+  assert.ok(get404.body.message.includes('API endpoint not found: GET /api/v1/nonexistent-route'));
+
+  // POST unknown route
+  const post404 = await request(app).post('/api/v1/auth/nonexistent');
+  assert.equal(post404.status, 404);
+  assert.equal(post404.body.success, false);
+  assert.ok(post404.body.message.includes('API endpoint not found: POST /api/v1/auth/nonexistent'));
+});
+
+test('Root and health aliases return JSON with HTTP 200 and db status', async () => {
+  const rootRes = await request(app).get('/');
+  assert.equal(rootRes.status, 200);
+  assert.equal(rootRes.body.status, 'ok');
+  assert.equal(rootRes.body.service, 'Blood Connect API');
+
+  const healthRes = await request(app).get('/health');
+  assert.equal(healthRes.status, 200);
+  assert.equal(healthRes.body.status, 'ok');
+  assert.equal(healthRes.body.database, 'connected');
+});
+
+test('isOriginAllowed correctly validates, normalizes trailing slashes, and filters origins', () => {
+  // Empty / undefined origin allowed (curl, server-to-server)
+  assert.equal(isOriginAllowed(undefined), true);
+  assert.equal(isOriginAllowed(''), true);
+
+  // Production domain with and without trailing slash
+  assert.equal(isOriginAllowed('https://blood-connect-two-weld.vercel.app'), true);
+  assert.equal(isOriginAllowed('https://blood-connect-two-weld.vercel.app/'), true);
+  assert.equal(isOriginAllowed('https://blood-connect-two-weld.vercel.app///'), true);
+
+  // Localhost on any port
+  assert.equal(isOriginAllowed('http://localhost:5173'), true);
+  assert.equal(isOriginAllowed('http://localhost:3000'), true);
+  assert.equal(isOriginAllowed('http://127.0.0.1:5173'), true);
+  assert.equal(isOriginAllowed('http://127.0.0.1:8080/'), true);
+
+  // Valid Vercel preview domain for blood-connect
+  assert.equal(isOriginAllowed('https://blood-connect-preview-branch.vercel.app'), true);
+
+  // Legacy origin rejected
+  assert.equal(isOriginAllowed('https://blood-connect-react.vercel.app'), false);
+  assert.equal(isOriginAllowed('https://blood-connect-react.vercel.app/'), false);
+
+  // Unrelated external domains rejected
+  assert.equal(isOriginAllowed('https://random-app.vercel.app'), false);
+  assert.equal(isOriginAllowed('https://malicious-site.com'), false);
 });
 

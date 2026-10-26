@@ -19,9 +19,17 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+    const defaultBackendUrl = isLocalhost
+      ? window.location.origin
+      : 'https://blood-connect-api.onrender.com';
+
     const socketUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.trim().replace(/\/$/, '')
-      : window.location.origin;
+      ? import.meta.env.VITE_API_URL.trim().replace(/\/+$/, '')
+      : defaultBackendUrl;
     const socketInstance = io(socketUrl, {
       auth: { token },
       transports: ['websocket', 'polling'],

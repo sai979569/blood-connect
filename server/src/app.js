@@ -28,24 +28,40 @@ const app = express();
 // --------------------------------------------------
 
 export const isOriginAllowed = (origin) => {
-  // Allow requests with no origin (e.g. server-to-server, curl, uptime monitors)
+  // Allow requests with no origin (e.g. server-to-server, curl, mobile apps, uptime monitors)
   if (!origin) return true;
 
-  const cleanOrigin = origin.trim().replace(/\/$/, '');
+  const cleanOrigin = origin.trim().replace(/\/+$/, '');
 
-  // Allow local development on any port
-  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin)) return true;
-
-  // Allow all Vercel domains (production & preview deployments)
-  if (/^https:\/\/.*\.vercel\.app$/.test(cleanOrigin)) return true;
-
-  // Allow explicit production domains
-  if (cleanOrigin === 'https://blood-connect-two-weld.vercel.app') return true;
-
-  // Allow configured CLIENT_ORIGIN from Render environment
+  // Check configured CLIENT_ORIGIN from environment (supports comma-separated origins)
   if (process.env.CLIENT_ORIGIN) {
-    const configuredClean = process.env.CLIENT_ORIGIN.trim().replace(/\/$/, '');
-    if (cleanOrigin === configuredClean) return true;
+    const configuredOrigins = process.env.CLIENT_ORIGIN.split(',')
+      .map((o) => o.trim().replace(/\/+$/, ''))
+      .filter(Boolean);
+
+    if (configuredOrigins.includes(cleanOrigin)) {
+      return true;
+    }
+  }
+
+  // Reject the legacy domain unless explicitly configured above
+  if (cleanOrigin === 'https://blood-connect-react.vercel.app') {
+    return false;
+  }
+
+  // Allow explicit production Vercel domain
+  if (cleanOrigin === 'https://blood-connect-two-weld.vercel.app') {
+    return true;
+  }
+
+  // Allow local development on localhost or 127.0.0.1 on any port (HTTP or HTTPS)
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin)) {
+    return true;
+  }
+
+  // Allow necessary Vercel preview deployments for this project only
+  if (/^https:\/\/blood-connect(-[a-z0-9_-]+)?\.vercel\.app$/i.test(cleanOrigin)) {
+    return true;
   }
 
   return false;
