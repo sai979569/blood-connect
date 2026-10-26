@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#991B1B;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#0F172A"/>
+  <path d="M256 64 C256 64 128 200 128 320 C128 390 185 448 256 448 C327 448 384 390 384 320 C384 200 256 64 256 64 Z" fill="url(#grad)" filter="url(#shadow)"/>
+  <!-- White cross within blood drop -->
+  <path d="M236 240 H276 V290 H326 V330 H276 V380 H236 V330 H186 V290 H236 Z" fill="#FFFFFF" opacity="0.95"/>
+</svg>
