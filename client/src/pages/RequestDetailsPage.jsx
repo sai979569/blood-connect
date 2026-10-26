@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Heart,
@@ -22,6 +22,7 @@ import api from '../services/api.js';
 import { useSocket } from '../context/SocketContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import LeafletMap from '../components/LeafletMap.jsx';
+import ScreenshotModal from '../components/ScreenshotModal.jsx';
 
 export const RequestDetailsPage = () => {
   const { id } = useParams();
@@ -35,6 +36,7 @@ export const RequestDetailsPage = () => {
   const [error, setError] = useState('');
   const [expanding, setExpanding] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const captureCardRef = useRef(null);
 
   const fetchRequestDetails = useCallback(async () => {
     try {
@@ -212,9 +214,11 @@ export const RequestDetailsPage = () => {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 20px' }}>
-      {/* Top Banner: Status & Key Indicators */}
+      {/* Top Banner: Status & Key Indicators (Capturable Emergency Card) */}
       <div
-        className="glass-panel"
+        ref={captureCardRef}
+        id="blood-connect-capture-area"
+        className="glass-panel capture-zone"
         style={{
           padding: '24px 28px',
           marginBottom: '24px',
@@ -281,8 +285,17 @@ export const RequestDetailsPage = () => {
           </div>
         </div>
 
-        {/* Action Buttons for Requester */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Action Buttons for Requester & Emergency Card Screenshot */}
+        <div className="no-screenshot" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <ScreenshotModal
+            targetRef={captureCardRef}
+            targetId="blood-connect-capture-area"
+            title={`Emergency Blood Appeal — ${request.bloodGroup}`}
+            fileName={`BloodConnect-Emergency-${request.bloodGroup}-${(request._id || 'card').substring(Math.max(0, (request._id || '').length - 6))}.png`}
+            buttonLabel="Screenshot Card"
+            buttonStyle={{ padding: '8px 16px', fontSize: '0.85rem' }}
+          />
+
           {request.status === 'active' && (
             <>
               <button

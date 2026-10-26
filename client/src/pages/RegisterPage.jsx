@@ -69,7 +69,24 @@ export const RegisterPage = () => {
 
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please check inputs.');
+      if (err.response) {
+        const resData = err.response.data;
+        if (Array.isArray(resData?.errors) && resData.errors.length > 0) {
+          setError(resData.errors.join(' • '));
+        } else if (resData?.message) {
+          setError(resData.message);
+        } else if (err.response.status === 409) {
+          setError('An account with this email or mobile number already exists.');
+        } else {
+          setError(`Registration failed (HTTP ${err.response.status}). Please check your inputs.`);
+        }
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('Server request timed out. The emergency backend is warming up, please retry in a moment.');
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setError('You are currently offline. Please reconnect to the internet to complete registration.');
+      } else {
+        setError('Cannot connect to emergency backend server. Please check your connection or retry shortly.');
+      }
     } finally {
       setSubmitting(false);
     }

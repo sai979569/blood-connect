@@ -24,7 +24,24 @@ export const LoginPage = () => {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check credentials.');
+      if (err.response) {
+        const resData = err.response.data;
+        if (resData?.message) {
+          setError(resData.message);
+        } else if (err.response.status === 401) {
+          setError('Invalid email or password. Please verify credentials.');
+        } else if (err.response.status === 403) {
+          setError('Account is inactive. Please contact support.');
+        } else {
+          setError(`Login failed (HTTP ${err.response.status}).`);
+        }
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('Server request timed out. The backend is waking up, please retry in a moment.');
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setError('You are currently offline. Please check your internet connection.');
+      } else {
+        setError('Cannot connect to emergency backend server. Please verify your connection or retry shortly.');
+      }
     } finally {
       setSubmitting(false);
     }
