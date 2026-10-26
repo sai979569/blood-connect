@@ -11,6 +11,8 @@ export const initSocket = (httpServer, clientOrigin) => {
         if (!origin) return callback(null, true);
         if (
           /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+          /^https:\/\/.*\.vercel\.app$/.test(origin) ||
+          origin === 'https://blood-connect-two-weld.vercel.app' ||
           origin === clientOrigin ||
           origin === process.env.CLIENT_ORIGIN
         ) {

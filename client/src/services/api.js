@@ -4,12 +4,14 @@ const apiBase = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api/v1`
   : '/api/v1';
 
+export const API_BASE_URL = apiBase;
+
 const api = axios.create({
   baseURL: apiBase,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 25000,
 });
 
 // Interceptor to attach JWT token

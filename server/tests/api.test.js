@@ -117,3 +117,82 @@ test('POST /api/v1/requests/:id/evaluate-radius triggers adaptive expansion', as
   assert.equal(expandRes.body.success, true);
   assert.ok(expandRes.body.request.currentRadiusKm >= 2);
 });
+
+test('CORS allows requests and preflight from deployed Vercel domain', async () => {
+  const res = await request(app)
+    .get('/api/v1/health')
+    .set('Origin', 'https://blood-connect-two-weld.vercel.app');
+
+  assert.equal(res.status, 200);
+  assert.equal(res.headers['access-control-allow-origin'], 'https://blood-connect-two-weld.vercel.app');
+  assert.equal(res.headers['access-control-allow-credentials'], 'true');
+
+  const preflightRes = await request(app)
+    .options('/api/v1/auth/register')
+    .set('Origin', 'https://blood-connect-two-weld.vercel.app')
+    .set('Access-Control-Request-Method', 'POST');
+
+  assert.equal(preflightRes.status, 204);
+  assert.equal(preflightRes.headers['access-control-allow-origin'], 'https://blood-connect-two-weld.vercel.app');
+});
+
+test('POST /api/v1/auth/register validates required fields and handles duplicate email', async () => {
+  // 1. Validation failure: passwords do not match
+  const invalidRes = await request(app)
+    .post('/api/v1/auth/register')
+    .send({
+      username: 'Test User',
+      email: 'testuser_invalid@example.com',
+      mobile: '+919876543210',
+      password: 'password123',
+      confirmPassword: 'differentpassword',
+      bloodGroup: 'B+',
+      location: { coordinates: [77.209, 28.5672] },
+      privacyConsent: true,
+    });
+  assert.equal(invalidRes.status, 400);
+  assert.equal(invalidRes.body.success, false);
+  assert.ok(invalidRes.body.message.includes('Passwords do not match'));
+
+  // 2. Successful registration
+  const uniqueSuffix = Date.now();
+  const validEmail = `newuser_${uniqueSuffix}@example.com`;
+  const validMobile = `+9199${String(uniqueSuffix).slice(-8)}`;
+
+  const regRes = await request(app)
+    .post('/api/v1/auth/register')
+    .send({
+      username: 'Valid New User',
+      email: validEmail,
+      mobile: validMobile,
+      password: 'password123',
+      confirmPassword: 'password123',
+      bloodGroup: 'O+',
+      location: { coordinates: [77.209, 28.5672] },
+      privacyConsent: true,
+    });
+
+  assert.equal(regRes.status, 201);
+  assert.equal(regRes.body.success, true);
+  assert.ok(regRes.body.token);
+  assert.equal(regRes.body.user.email, validEmail);
+
+  // 3. Duplicate registration conflict (409)
+  const dupRes = await request(app)
+    .post('/api/v1/auth/register')
+    .send({
+      username: 'Another User',
+      email: validEmail,
+      mobile: `+9191${String(uniqueSuffix + 1).slice(-8)}`,
+      password: 'password123',
+      confirmPassword: 'password123',
+      bloodGroup: 'O+',
+      location: { coordinates: [77.209, 28.5672] },
+      privacyConsent: true,
+    });
+
+  assert.equal(dupRes.status, 409);
+  assert.equal(dupRes.body.success, false);
+  assert.ok(dupRes.body.message.includes('already registered'));
+});
+

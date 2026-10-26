@@ -1,3 +1,6 @@
+import dns from 'node:dns';
+
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 import http from 'http';
 import dotenv from 'dotenv';
 import app from './app.js';
