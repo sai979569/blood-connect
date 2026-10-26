@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext.jsx';
+import { SOCKET_URL } from '../config/apiConfig.js';
 
 const SocketContext = createContext(null);
 
@@ -19,18 +20,7 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const isLocalhost =
-      typeof window !== 'undefined' &&
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-    const defaultBackendUrl = isLocalhost
-      ? window.location.origin
-      : 'https://blood-connect-api.onrender.com';
-
-    const socketUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.trim().replace(/\/+$/, '')
-      : defaultBackendUrl;
-    const socketInstance = io(socketUrl, {
+    const socketInstance = io(SOCKET_URL, {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,

@@ -1,17 +1,12 @@
 import { getPendingDrafts, removeDraft, updateDraftStatus } from './db.js';
+import { HEALTH_CHECK_URL } from '../config/apiConfig.js';
 
 let isSyncRunning = false;
 
 /**
- * Resolves the absolute or proxied health check URL
+ * Resolves the centralized health check URL
  */
-export const getHealthUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
-    return `${envUrl.trim().replace(/\/$/, '')}/api/v1/health`;
-  }
-  return '/api/v1/health';
-};
+export const getHealthUrl = () => HEALTH_CHECK_URL;
 
 /**
  * Checks connectivity by distinguishing browser network status from backend health

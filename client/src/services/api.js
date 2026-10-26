@@ -1,13 +1,22 @@
 import axios from 'axios';
+import {
+  API_BASE_URL,
+  BACKEND_URL,
+  HEALTH_CHECK_URL,
+  SOCKET_URL,
+  DEFAULT_PRODUCTION_BACKEND,
+} from '../config/apiConfig.js';
 
-const apiBase = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api/v1`
-  : '/api/v1';
-
-export const API_BASE_URL = apiBase;
+export {
+  API_BASE_URL,
+  BACKEND_URL,
+  HEALTH_CHECK_URL,
+  SOCKET_URL,
+  DEFAULT_PRODUCTION_BACKEND,
+};
 
 const api = axios.create({
-  baseURL: apiBase,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

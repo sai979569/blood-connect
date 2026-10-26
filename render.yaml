@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: blood-connect-api
+    name: blood-connect-2pmc
     env: node
     plan: free
     branch: main

@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://blood-connect-api.onrender.com/api/:path*"
+      "destination": "https://blood-connect-2pmc.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
