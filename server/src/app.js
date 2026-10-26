@@ -27,22 +27,37 @@ const app = express();
 // CORS CONFIGURATION
 // --------------------------------------------------
 
-const allowedOrigins = [
-  'https://blood-connect-two-weld.vercel.app',
-  process.env.CLIENT_ORIGIN,
-  'http://localhost:5173',
-].filter(Boolean);
+export const isOriginAllowed = (origin) => {
+  // Allow requests with no origin (e.g. server-to-server, curl, uptime monitors)
+  if (!origin) return true;
+
+  const cleanOrigin = origin.trim().replace(/\/$/, '');
+
+  // Allow local development on any port
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin)) return true;
+
+  // Allow all Vercel domains (production & preview deployments)
+  if (/^https:\/\/.*\.vercel\.app$/.test(cleanOrigin)) return true;
+
+  // Allow explicit production domains
+  if (cleanOrigin === 'https://blood-connect-two-weld.vercel.app') return true;
+
+  // Allow configured CLIENT_ORIGIN from Render environment
+  if (process.env.CLIENT_ORIGIN) {
+    const configuredClean = process.env.CLIENT_ORIGIN.trim().replace(/\/$/, '');
+    if (cleanOrigin === configuredClean) return true;
+  }
+
+  return false;
+};
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests without an Origin header, such as
-    // health checks, command-line tools, and server-to-server calls.
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
-
-    console.warn(`[CORS] Blocked origin: ${origin}`);
-    return callback(new Error('Origin not allowed by CORS'));
+    console.warn(`[CORS] Blocked unauthorized origin: ${origin}`);
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -51,7 +66,9 @@ const corsOptions = {
     'Authorization',
     'X-Requested-With',
     'Accept',
+    'Origin',
   ],
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
@@ -75,10 +92,10 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // --------------------------------------------------
-// HEALTH CHECK
+// HEALTH CHECK & ROOT STATUS
 // --------------------------------------------------
 
-app.get('/api/v1/health', (req, res) => {
+app.get(['/', '/health', '/api/v1/health'], (req, res) => {
   const dbState = mongoose.connection.readyState;
 
   const dbStatus =

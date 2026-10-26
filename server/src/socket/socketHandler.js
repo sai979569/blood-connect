@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { isOriginAllowed } from '../app.js';
 
 let ioInstance = null;
 
@@ -8,17 +9,10 @@ export const initSocket = (httpServer, clientOrigin) => {
   ioInstance = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        if (
-          /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-          /^https:\/\/.*\.vercel\.app$/.test(origin) ||
-          origin === 'https://blood-connect-two-weld.vercel.app' ||
-          origin === clientOrigin ||
-          origin === process.env.CLIENT_ORIGIN
-        ) {
+        if (isOriginAllowed(origin)) {
           return callback(null, true);
         }
-        callback(null, true);
+        return callback(null, false);
       },
       methods: ['GET', 'POST'],
       credentials: true,

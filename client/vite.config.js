@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icons/*.png', 'icons/icon.svg'],
       manifest: {
         name: 'Blood Connect - Location-Aware Blood Donor Coordination',
         short_name: 'BloodConnect',
